@@ -1,5 +1,6 @@
 import os
 import json
+from string import digits
 
 BAKE_CAKE_DB: str = 'json_files/user_orders.json'
 
@@ -45,3 +46,17 @@ def get_order_id(usr_orders, effective_user_id):
             c = i['orders']
             return message_keyboard, b, c
 
+
+def is_fullname_valid(fullname: list) -> bool:
+    """Проверка на валидность имени и фамилии"""
+    if len(fullname) < 2:
+        return True
+    return False
+
+
+def is_digits_in_fullname(fullname: list) -> bool:
+    """Проверка на наличие цифр в имени и фамилии"""
+    for digit in digits:
+        if str(digit) in ' '.join(fullname):
+            return True
+    return False

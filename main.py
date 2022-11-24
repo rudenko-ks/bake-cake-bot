@@ -60,6 +60,15 @@ def get_phone_number(update: Update, context: CallbackContext):
     user_data[category] = text
     del user_data['choice']
 
+    user_fullname = user_data['Имя и фамилия'].split()
+    if is_fullname_valid(user_fullname):
+        update.message.reply_text(
+            'Вы не указали фамилию или имя, попробуйте снова.')
+        return get_fullname(update, context)
+    if is_digits_in_fullname(user_fullname):
+        update.message.reply_text('В имени или фамилии присутствуют цифры!')
+        return get_fullname(update, context)
+
     context.user_data['choice'] = 'Телефон'
     update.message.reply_text(f'Введите телефон в формате +7...')
 
@@ -77,9 +86,12 @@ def push_user_orders(update: Update, context: CallbackContext):
                                  resize_keyboard=True,
                                  one_time_keyboard=True)
     if b == 0:
-        update.effective_message.reply_text('У вас нет заказов ', reply_markup=markup)
+        update.effective_message.reply_text('У вас нет заказов ',
+                                            reply_markup=markup)
     else:
-        update.effective_message.reply_text('Выберите номер заказа. Кол-во заказов: ' + str(b), reply_markup=markup)
+        update.effective_message.reply_text(
+            'Выберите номер заказа. Кол-во заказов: ' + str(b),
+            reply_markup=markup)
     return CHOICE_ORDER
 
 
@@ -99,8 +111,8 @@ def push_user_order(update: Update, context: CallbackContext):
             cakes_decor = 'Декро: ' + str(k['cakes_decor']) + '\n'
             cakes_text = 'Надпись: ' + str(k['cakes_text']) + '\n'
 
-            update.message.reply_text(created_date + cake_layers + cake_toping
-                                      + cake_fruits + cakes_decor + cakes_text)
+            update.message.reply_text(created_date + cake_layers + cake_toping +
+                                      cake_fruits + cakes_decor + cakes_text)
     return start(update, context)
 
 
@@ -162,18 +174,10 @@ if __name__ == '__main__':
             USER_FULLNAME: [
                 MessageHandler(Filters.regex('^(✅ Согласен)$'), get_fullname),
             ],
-            PHONE_NUMBER: [
-                MessageHandler(Filters.text, get_phone_number)
-            ],
-            END_AUTH: [
-                MessageHandler(Filters.text, end_auth),
-            ],
-            NUMBER_ORDER: [
-                MessageHandler(Filters.text, push_user_orders),
-            ],
-            CHOICE_ORDER: [
-                MessageHandler(Filters.text, push_user_order),
-            ]
+            PHONE_NUMBER: [MessageHandler(Filters.text, get_phone_number)],
+            END_AUTH: [MessageHandler(Filters.text, end_auth),],
+            NUMBER_ORDER: [MessageHandler(Filters.text, push_user_orders),],
+            CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order),]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
     )
