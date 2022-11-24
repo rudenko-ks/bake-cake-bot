@@ -92,7 +92,15 @@ def push_user_order(update: Update, context: CallbackContext):
     context.user_data['переходить'] = text
     for k in c:
         if str(k['id']) == context.user_data['переходить']:
-            update.message.reply_text(str(k))
+            created_date = 'Дата создания: ' + str(k['created_date']) + '\n'
+            cake_layers = 'Уровни: ' + str(k['cake_layers']) + '\n'
+            cake_toping = 'Топинги: ' + str(k['cake_toping']) + '\n'
+            cake_fruits = 'Фрукты: ' + str(k['cake_fruits']) + '\n'
+            cakes_decor = 'Декро: ' + str(k['cakes_decor']) + '\n'
+            cakes_text = 'Надпись: ' + str(k['cakes_text']) + '\n'
+
+            update.message.reply_text(created_date + cake_layers + cake_toping
+                                      + cake_fruits + cakes_decor + cakes_text)
     return start(update, context)
 
 

@@ -35,13 +35,13 @@ def get_order_id(usr_orders, effective_user_id):
     for i in usr_orders:
         if i['user_id'] == effective_user_id:
             all_orders = i['orders']
-            y = 0
+            b = 0
             x = []
             for j in all_orders:
                 vivod_orderov = j['id']
-                y = vivod_orderov
+                b = vivod_orderov
                 x.append(str(vivod_orderov))
             message_keyboard = [x, ['Личный кабинет']]
-            z = i['orders']
-            return message_keyboard, y, z
+            c = i['orders']
+            return message_keyboard, b, c
 
