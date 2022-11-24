@@ -60,3 +60,27 @@ def is_digits_in_fullname(fullname: list) -> bool:
         if str(digit) in ' '.join(fullname):
             return True
     return False
+
+
+def clear_phone_number(phone_number: str) -> str:
+    """Функция очищает номер телефона от лишних симоволов"""
+    numbers_in_phone = [number for number in phone_number if number in digits]
+    phone_without_symbols = "".join(numbers_in_phone)
+    if phone_without_symbols.startswith('7'):
+        return phone_without_symbols
+    else:
+        return None
+
+
+def is_valid_phone_number(phone_number: str) -> bool:
+    """Проверка на валидность номера телефона"""
+    if len(phone_number) > 11:
+        return False
+    elif len(phone_number) < 11:
+        return False
+
+    cleared_phone_number = clear_phone_number(phone_number)
+    if not cleared_phone_number:
+        return False
+
+    return True

@@ -70,7 +70,7 @@ def get_phone_number(update: Update, context: CallbackContext):
         return get_fullname(update, context)
 
     context.user_data['choice'] = 'Телефон'
-    update.message.reply_text(f'Введите телефон в формате +7...')
+    update.message.reply_text(f'Введите телефон в формате 7...')
 
     return END_AUTH
 
@@ -119,6 +119,11 @@ def push_user_order(update: Update, context: CallbackContext):
 def end_auth(update: Update, context: CallbackContext):
     user_data = context.user_data
     text = update.message.text
+
+    if not is_valid_phone_number(text):
+        invalid_phone_msg = invalid_phone_number_message()
+        update.message.reply_text(invalid_phone_msg)
+        return get_phone_number(update, context)
 
     category = user_data['choice']
     user_data[category] = text
