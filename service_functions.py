@@ -67,16 +67,16 @@ def clear_phone_number(phone_number: str) -> str:
     numbers_in_phone = [number for number in phone_number if number in digits]
     phone_without_symbols = "".join(numbers_in_phone)
     if phone_without_symbols.startswith('7'):
-        return phone_without_symbols
+        return f'+{phone_without_symbols}'
     else:
         return None
 
 
 def is_valid_phone_number(phone_number: str) -> bool:
     """Проверка на валидность номера телефона"""
-    if len(phone_number) > 11:
+    if len(phone_number) > 12:
         return False
-    elif len(phone_number) < 11:
+    elif len(phone_number) < 12:
         return False
 
     cleared_phone_number = clear_phone_number(phone_number)

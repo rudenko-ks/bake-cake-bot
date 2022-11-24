@@ -70,8 +70,16 @@ def get_phone_number(update: Update, context: CallbackContext):
         return get_fullname(update, context)
 
     context.user_data['choice'] = 'Телефон'
-    update.message.reply_text(f'Введите телефон в формате 7...')
 
+    message_keyboard = [[
+        KeyboardButton('Отправить свой номер телефона', request_contact=True)
+    ]]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    update.message.reply_text(
+        f'Введите телефон в формате +7... или нажав на кнопку ниже:',
+        reply_markup=markup)
     return END_AUTH
 
 
@@ -118,7 +126,10 @@ def push_user_order(update: Update, context: CallbackContext):
 
 def end_auth(update: Update, context: CallbackContext):
     user_data = context.user_data
-    text = update.message.text
+    if update.message.contact:
+        text = update.message.contact.phone_number
+    else:
+        text = update.message.text
 
     if not is_valid_phone_number(text):
         invalid_phone_msg = invalid_phone_number_message()
@@ -180,7 +191,10 @@ if __name__ == '__main__':
                 MessageHandler(Filters.regex('^(✅ Согласен)$'), get_fullname),
             ],
             PHONE_NUMBER: [MessageHandler(Filters.text, get_phone_number)],
-            END_AUTH: [MessageHandler(Filters.text, end_auth),],
+            END_AUTH: [
+                MessageHandler(Filters.contact, end_auth),
+                MessageHandler(Filters.text, end_auth),
+            ],
             NUMBER_ORDER: [MessageHandler(Filters.text, push_user_orders),],
             CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order),]
         },
