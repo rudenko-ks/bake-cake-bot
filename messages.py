@@ -19,3 +19,5 @@ Bake Cake - telegram-бот тортов на заказ.
 Выберите, куда хотите перейти.
 """
     return greeting_msg
+
+

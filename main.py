@@ -8,9 +8,11 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
 from messages import *
 from service_functions import *
 
-USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT = range(4)
+USER_FULLNAME, PHONE_NUMBER, END_AUTH, NUMBER_ORDER, CHOICE_ORDER = range(5)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
+
+SELF_STORAGE_USER_ORDERS: str = 'json_files/user_orders.json'
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -41,7 +43,7 @@ def start(update: Update, context: CallbackContext) -> int:
 
         menu_msg = create_start_message_exist_user(user.name)
         update.effective_message.reply_text(menu_msg, reply_markup=markup)
-        return PERSONAL_ACCOUNT
+        return NUMBER_ORDER
 
 
 def get_fullname(update: Update, context: CallbackContext) -> int:
@@ -49,6 +51,7 @@ def get_fullname(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(f'Введите имя и фамилию:')
 
     return PHONE_NUMBER
+
 
 def get_phone_number(update: Update, context: CallbackContext):
     user_data = context.user_data
@@ -62,6 +65,35 @@ def get_phone_number(update: Update, context: CallbackContext):
 
     return END_AUTH
 
+
+# Если пользователь зарегистрирован - return PERSONAL_ACCOUNT из функции start
+def push_user_orders(update: Update, context: CallbackContext):
+    with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
+        usr_orders = json.load(json_file)
+    effective_user_id = update.effective_user.id
+    a = get_order_id(usr_orders, effective_user_id)[0]
+    b = get_order_id(usr_orders, effective_user_id)[1]
+    markup = ReplyKeyboardMarkup(a,
+                                 resize_keyboard=True,
+                                 one_time_keyboard=True)
+    if b == 0:
+        update.effective_message.reply_text('У вас нет заказов ', reply_markup=markup)
+    else:
+        update.effective_message.reply_text('Выберите номер заказа. Кол-во заказов: ' + str(b), reply_markup=markup)
+    return CHOICE_ORDER
+
+
+def push_user_order(update: Update, context: CallbackContext):
+    with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
+        usr_orders = json.load(json_file)
+    effective_user_id = update.effective_user.id
+    c = get_order_id(usr_orders, effective_user_id)[2]
+    text = update.message.text
+    context.user_data['переходить'] = text
+    for k in c:
+        if str(k['id']) == context.user_data['переходить']:
+            update.message.reply_text(str(k))
+    return start(update, context)
 
 
 def end_auth(update: Update, context: CallbackContext):
@@ -112,7 +144,7 @@ if __name__ == '__main__':
     telegram_bot_token = os.environ['TELEGRAM_TOKEN']
 
     database_create_users_order()
-
+    #  From version 13 use_context=True it is the default.
     updater = Updater(telegram_bot_token, use_context=True)
     dispatcher = updater.dispatcher
 
@@ -122,13 +154,18 @@ if __name__ == '__main__':
             USER_FULLNAME: [
                 MessageHandler(Filters.regex('^(✅ Согласен)$'), get_fullname),
             ],
-            PHONE_NUMBER: [MessageHandler(Filters.text, get_phone_number)],
+            PHONE_NUMBER: [
+                MessageHandler(Filters.text, get_phone_number)
+            ],
             END_AUTH: [
                 MessageHandler(Filters.text, end_auth),
             ],
-            # PERSONAL_ACCOUNT: [
-            #
-            # ]
+            NUMBER_ORDER: [
+                MessageHandler(Filters.text, push_user_orders),
+            ],
+            CHOICE_ORDER: [
+                MessageHandler(Filters.text, push_user_order),
+            ]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
     )

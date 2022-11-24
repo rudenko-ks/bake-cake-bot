@@ -29,3 +29,19 @@ def is_new_user(user_id: int) -> bool:
         user['user_id'] for user in users if user['user_id'] == user_id
     ]
     return not bool(users_ids)
+
+
+def get_order_id(usr_orders, effective_user_id):
+    for i in usr_orders:
+        if i['user_id'] == effective_user_id:
+            all_orders = i['orders']
+            y = 0
+            x = []
+            for j in all_orders:
+                vivod_orderov = j['id']
+                y = vivod_orderov
+                x.append(str(vivod_orderov))
+            message_keyboard = [x, ['Личный кабинет']]
+            z = i['orders']
+            return message_keyboard, y, z
+
