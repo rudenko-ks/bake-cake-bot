@@ -41,7 +41,7 @@ def get_order_id(usr_orders, effective_user_id):
                 vivod_orderov = j['id']
                 y = vivod_orderov
                 x.append(str(vivod_orderov))
-            message_keyboard = [x, ['❌ переходить дальше']]
+            message_keyboard = [x, ['Личный кабинет']]
             z = i['orders']
             return message_keyboard, y, z
 

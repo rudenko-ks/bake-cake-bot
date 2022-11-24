@@ -21,13 +21,3 @@ Bake Cake - telegram-бот тортов на заказ.
     return greeting_msg
 
 
-def create_orders_msg(username: str) -> str:
-    greeting_msg = f"""
-Привет, {username}!
-
-Telegram-бот тортов на заказ. Принимает заказы на торты, собранные самим покупателем.
-
-Если вам интересны наши услуги, пожалуйста, пройдите регистрацию.
-Для этого согласитесь на обработку персональных данных.
-"""
-    return greeting_msg

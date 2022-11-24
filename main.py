@@ -73,11 +73,13 @@ def push_user_orders(update: Update, context: CallbackContext):
     effective_user_id = update.effective_user.id
     a = get_order_id(usr_orders, effective_user_id)[0]
     b = get_order_id(usr_orders, effective_user_id)[1]
-    c = get_order_id(usr_orders, effective_user_id)[2]
     markup = ReplyKeyboardMarkup(a,
                                  resize_keyboard=True,
                                  one_time_keyboard=True)
-    update.effective_message.reply_text('Выберите номер заказа. Кол-во заказов: ' + str(b), reply_markup=markup)
+    if b == 0:
+        update.effective_message.reply_text('У вас нет заказов ', reply_markup=markup)
+    else:
+        update.effective_message.reply_text('Выберите номер заказа. Кол-во заказов: ' + str(b), reply_markup=markup)
     return CHOICE_ORDER
 
 
@@ -88,7 +90,6 @@ def push_user_order(update: Update, context: CallbackContext):
     c = get_order_id(usr_orders, effective_user_id)[2]
     text = update.message.text
     context.user_data['переходить'] = text
-    update.message.reply_text(f'____________________')
     for k in c:
         if str(k['id']) == context.user_data['переходить']:
             update.message.reply_text(str(k))
