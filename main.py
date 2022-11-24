@@ -88,17 +88,17 @@ def push_user_orders(update: Update, context: CallbackContext):
     with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
         usr_orders = json.load(json_file)
     effective_user_id = update.effective_user.id
-    a = get_order_id(usr_orders, effective_user_id)[0]
-    b = get_order_id(usr_orders, effective_user_id)[1]
-    markup = ReplyKeyboardMarkup(a,
+    message_keyboard = get_order_id(usr_orders, effective_user_id)[0]
+    count_order_id = get_order_id(usr_orders, effective_user_id)[1]
+    markup = ReplyKeyboardMarkup(message_keyboard,
                                  resize_keyboard=True,
                                  one_time_keyboard=True)
-    if b == 0:
+    if count_order_id == 0:
         update.effective_message.reply_text('У вас нет заказов ',
                                             reply_markup=markup)
     else:
         update.effective_message.reply_text(
-            'Выберите номер заказа. Кол-во заказов: ' + str(b),
+            'Выберите номер заказа. Кол-во заказов: ' + str(count_order_id),
             reply_markup=markup)
     return CHOICE_ORDER
 
@@ -107,19 +107,20 @@ def push_user_order(update: Update, context: CallbackContext):
     with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
         usr_orders = json.load(json_file)
     effective_user_id = update.effective_user.id
-    c = get_order_id(usr_orders, effective_user_id)[2]
+    all_user_orders = get_order_id(usr_orders, effective_user_id)[2]
     text = update.message.text
-    context.user_data['переходить'] = text
-    for k in c:
-        if str(k['id']) == context.user_data['переходить']:
-            created_date = 'Дата создания: ' + str(k['created_date']) + '\n'
-            cake_layers = 'Уровни: ' + str(k['cake_layers']) + '\n'
-            cake_toping = 'Топинги: ' + str(k['cake_toping']) + '\n'
-            cake_fruits = 'Фрукты: ' + str(k['cake_fruits']) + '\n'
-            cakes_decor = 'Декро: ' + str(k['cakes_decor']) + '\n'
-            cakes_text = 'Надпись: ' + str(k['cakes_text']) + '\n'
+    context.user_data['переходить'] = str(text)
+    for user_order in all_user_orders:
+        if str(user_order['id']) == context.user_data['переходить']:
+            created_date = 'Дата создания: ' + str(user_order['created_date']) + '\n'
+            status =  'Cтатус доставки: ' + str(user_order['status']) + '\n'
+            cake_layers = 'Уровни: ' + str(user_order['cake_layers']) + '\n'
+            cake_toping = 'Топинги: ' + str(user_order['cake_toping']) + '\n'
+            cake_fruits = 'Фрукты: ' + str(user_order['cake_fruits']) + '\n'
+            cakes_decor = 'Декро: ' + str(user_order['cakes_decor']) + '\n'
+            cakes_text = 'Надпись: ' + str(user_order['cakes_text']) + '\n'
 
-            update.message.reply_text(created_date + cake_layers + cake_toping +
+            update.message.reply_text(status + created_date + cake_layers + cake_toping +
                                       cake_fruits + cakes_decor + cakes_text)
     return start(update, context)
 
@@ -176,12 +177,13 @@ def cancel_auth(update: Update, context: CallbackContext) -> None:
 
 
 if __name__ == '__main__':
+
     load_dotenv()
     telegram_bot_token = os.environ['TELEGRAM_TOKEN']
 
     database_create_users_order()
     #  From version 13 use_context=True it is the default.
-    updater = Updater(telegram_bot_token, use_context=True)
+    updater = Updater(telegram_bot_token)
     dispatcher = updater.dispatcher
 
     conv_handler = ConversationHandler(
@@ -195,8 +197,9 @@ if __name__ == '__main__':
                 MessageHandler(Filters.contact, end_auth),
                 MessageHandler(Filters.text, end_auth),
             ],
-            NUMBER_ORDER: [MessageHandler(Filters.text, push_user_orders),],
-            CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order),]
+            NUMBER_ORDER: [MessageHandler(Filters.regex(r'Мои заказы'), push_user_orders),
+                           MessageHandler(Filters.regex(r'Личный кабинет'), start)],
+            CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order)],
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
     )

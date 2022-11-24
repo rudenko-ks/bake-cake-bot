@@ -33,18 +33,17 @@ def is_new_user(user_id: int) -> bool:
 
 
 def get_order_id(usr_orders, effective_user_id):
-    for i in usr_orders:
-        if i['user_id'] == effective_user_id:
-            all_orders = i['orders']
-            b = 0
-            x = []
-            for j in all_orders:
-                vivod_orderov = j['id']
-                b = vivod_orderov
-                x.append(str(vivod_orderov))
-            message_keyboard = [x, ['Личный кабинет']]
-            c = i['orders']
-            return message_keyboard, b, c
+    for user in usr_orders:
+        if user['user_id'] == effective_user_id:
+            all_user_orders = user['orders']
+            count_order_id = 0
+            orders_id = []
+            for order in all_user_orders:
+                count_order_id = order['id']
+                orders_id.append(str(count_order_id))
+            message_keyboard = [orders_id, ['Личный кабинет']]
+            # c = user['orders']
+            return message_keyboard, count_order_id, all_user_orders
 
 
 def is_fullname_valid(fullname: list) -> bool:
