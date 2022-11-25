@@ -21,3 +21,10 @@ This file contains your secret information. Fill it out like this:
 ```
 TELEGRAM_TOKEN={TOKEN} - Your bot token in TG
 ```
+---
+The project was worked on:
+* [Kirill Rudenko](https://github.com/rudenko-ks)
+* [Konstantin Anisimov](https://github.com/AnisimovK)
+* [Elnar](https://github.com/elnarmen)
+
+
