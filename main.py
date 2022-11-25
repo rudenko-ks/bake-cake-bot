@@ -8,11 +8,40 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
 from messages import *
 from service_functions import *
 
-USER_FULLNAME, PHONE_NUMBER, END_AUTH, NUMBER_ORDER, CHOICE_ORDER = range(5)
+# USER_FULLNAME, PHONE_NUMBER, END_AUTH, NUMBER_ORDER, CHOICE_ORDER = range(5)
+
+USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, CAKE_SHAPE, TOPPING, BERRIES, \
+DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER = range(16)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
 
 SELF_STORAGE_USER_ORDERS: str = 'json_files/user_orders.json'
+
+PRICES = {
+    '1': 400,
+    '2': 750,
+    '3': 1100,
+    'Квадрат': 600,
+    'Круг': 400,
+    'Прямоугольник': 1000,
+    'Молочный шоколад': 200,
+    'Карамельный сироп': 180,
+    'Белый соус': 200,
+    'Кленовый сироп': 200,
+    'Клубничный сироп': 300,
+    'Черничный сироп': 350,
+    'Без топпинга': 0,
+    'Ежевика': 400,
+    'Малина': 300,
+    'Голубика': 450,
+    'Клубника': 500,
+    'Фисташки': 300,
+    'Безе': 400,
+    'Фундук': 350,
+    'Пекан': 300,
+    'Маршмеллоу': 200,
+    'Марципан': 280,
+}
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -43,7 +72,7 @@ def start(update: Update, context: CallbackContext) -> int:
 
         menu_msg = create_start_message_exist_user(user.name)
         update.effective_message.reply_text(menu_msg, reply_markup=markup)
-        return NUMBER_ORDER
+        return PERSONAL_ACCOUNT
 
 
 def get_fullname(update: Update, context: CallbackContext) -> int:
@@ -112,16 +141,295 @@ def push_user_order(update: Update, context: CallbackContext):
     context.user_data['переходить'] = str(text)
     for user_order in all_user_orders:
         if str(user_order['id']) == context.user_data['переходить']:
-            created_date = 'Дата создания: ' + str(user_order['created_date']) + '\n'
-            status =  'Cтатус доставки: ' + str(user_order['status']) + '\n'
+            delivery_date = 'Дата доставки: ' + str(
+                user_order['delivery_date']) + '\n'
+            delivery_time = 'Время доставки: ' + str(
+                user_order['delivery_time']) + '\n'
+            status = 'Cтатус доставки: ' + str(user_order['status']) + '\n'
             cake_layers = 'Уровни: ' + str(user_order['cake_layers']) + '\n'
             cake_toping = 'Топинги: ' + str(user_order['cake_toping']) + '\n'
-            cake_fruits = 'Фрукты: ' + str(user_order['cake_fruits']) + '\n'
+            cake_fruits = 'Фрукты: ' + str(user_order['cake_berries']) + '\n'
             cakes_decor = 'Декро: ' + str(user_order['cakes_decor']) + '\n'
-            cakes_text = 'Надпись: ' + str(user_order['cakes_text']) + '\n'
+            cakes_text = 'Надпись: ' + str(
+                user_order['cake_inscription']) + '\n'
+            address = 'Адрес доставки: ' + str(user_order['address']) + '\n'
+            order_cost = 'Стоимость: ' + str(user_order['order_cost']) + '\n'
+            update.message.reply_text(status + delivery_date + delivery_time +
+                                      cake_layers + cake_toping + cake_fruits +
+                                      cakes_decor + cakes_text + address +
+                                      order_cost)
+    return start(update, context)
 
-            update.message.reply_text(status + created_date + cake_layers + cake_toping +
-                                      cake_fruits + cakes_decor + cakes_text)
+
+def get_amount_of_layers(update: Update, context: CallbackContext) -> int:
+    message_keyboard = [['1', '2', '3']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    context.user_data['choice'] = 'ammount_of_layers'
+    update.message.reply_text(f'''
+    Выберите количество ярусов торта
+    1 уровень      {PRICES['1']}р
+    2 уровень      {PRICES['1']}р
+    3 уровень      {PRICES['1']}р
+    ''',
+                              reply_markup=markup)
+
+    return CAKE_SHAPE
+
+
+def get_cake_shape(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    message_keyboard = [['Квадрат', 'Круг'], ['Прямоугольник']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    context.user_data['choice'] = 'shape'
+    update.message.reply_text(f'''
+    Выберите форму
+    Квадрат            {PRICES['Квадрат']}р
+    Круг               {PRICES['Круг']}р
+    Прямоугольник      {PRICES['Прямоугольник']}р
+    ''',
+                              reply_markup=markup)
+
+    return TOPPING
+
+
+def get_topping(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+
+    message_keyboard = [['Молочный шоколад', 'Белый соус'],
+                        ['Карамельный сироп', 'Кленовый сироп'],
+                        ['Клубничный сироп', 'Черничный сироп'],
+                        ['Без топпинга']]
+
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+
+    context.user_data['choice'] = 'topping'
+
+    update.message.reply_text(f'''
+    Выберите Топпинг
+    Молочный шоколад      {PRICES['Молочный шоколад']}р
+    Белый соус            {PRICES['Белый соус']}р
+    Карамельный сироп     {PRICES['Карамельный сироп']}р
+    Кленовый сироп        {PRICES['Кленовый сироп']}р
+    Клубничный сироп      {PRICES['Клубничный сироп']}р
+    Черничный сироп       {PRICES['Черничный сироп']}р
+    Без топпинга          {PRICES['Без топпинга']}р
+        ''',
+                              reply_markup=markup)
+
+    return BERRIES
+
+
+def get_berries(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+
+    message_keyboard = [
+        ['Ежевика', 'Малина'],
+        ['Голубика', 'Клубника'],
+        ['Пропустить'],
+    ]
+
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+
+    context.user_data['choice'] = 'berries'
+    update.message.reply_text(f'''
+    Выберите ягоды:
+    Ежевика       {PRICES['Ежевика']}р
+    Малина        {PRICES['Малина']}р
+    Голубика      {PRICES['Голубика']}р
+    Клубника      {PRICES['Клубника']}р
+    ''',
+                              reply_markup=markup)
+    return DECOR
+
+
+def get_decor(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    message_keyboard = [['Фисташки', 'Безе'], ['Фундук', 'Пекан'],
+                        ['Маршмеллоу', 'Марципан'], ['Пропустить']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    context.user_data['choice'] = 'decor'
+    update.message.reply_text(f'''
+    Выберите декор:
+    Фисташки        {PRICES['Фисташки']}р
+    Безе            {PRICES['Безе']}р
+    Фундук          {PRICES['Фундук']}р
+    Пекан           {PRICES['Пекан']}р
+    Маршмеллоу      {PRICES['Маршмеллоу']}р
+    Марципан        {PRICES['Марципан']}р
+    ''',
+                              reply_markup=markup)
+    return INSCRIPTION
+
+
+def get_inscription(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    message_keyboard = [['Пропустить']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    context.user_data['choice'] = 'inscription'
+    update.message.reply_text('''
+    Мы можем разместить на торте любую надпись, например:
+    "С днем рождения!
+    Стоимость      500р"
+    ''',
+                              reply_markup=markup)
+
+    return ORDER_COMMENT
+
+
+def get_order_comment(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    message_keyboard = [['Пропустить']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    context.user_data['choice'] = 'comment'
+    update.message.reply_text('Коментарий к заказу', reply_markup=markup)
+
+    return ADDRESS
+
+
+def get_address(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    context.user_data['choice'] = 'address'
+    message_keyboard = [[
+        KeyboardButton('Отправить геопозицию', request_location=True)
+    ]]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    update.message.reply_text('Введите ваш адрес', reply_markup=markup)
+
+    return DELIVERY_DATE
+
+
+def get_delivery_date(update: Update, context: CallbackContext) -> int:
+    if update.message.location:
+        address = f"{update.message.location['latitude']}, {update.message.location['longitude']}"
+    else:
+        address = update.message.text
+    category = context.user_data['choice']
+    context.user_data[category] = [address, 0]
+    context.user_data['choice'] = 'delivery_date'
+    update.message.reply_text('Введите дату доставки в формате: ДД.ММ.ГГ')
+
+    return DELIVERY_TIME
+
+
+def get_delivery_time(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    context.user_data['choice'] = 'delivery_time'
+    update.message.reply_text('Введите время доставки в формате: ЧЧ.ММ')
+
+    return ORDER_SAVING
+
+
+def save_user_choice(update: Update, context: CallbackContext) -> None:
+    text = update.message.text
+    category = context.user_data['choice']
+    if text in PRICES:
+        context.user_data[category] = [text, PRICES[text]]
+    elif text == 'Пропустить':
+        context.user_data[category] = ['-', 0]
+    else:
+        context.user_data[category] = [text, 0]
+    del context.user_data['choice']
+    return
+
+
+def save_order(update: Update, context: CallbackContext) -> int:
+    save_user_choice(update, context)
+    user_data = context.user_data
+
+    user_id = update.effective_user.id
+    users = database_read_users_order()
+    for user in users:
+        if user_id in user.values():
+            order = {
+                'id':
+                    len(user['orders']) + 1,
+                'status':
+                    'Принят',
+                'cake_layers':
+                    user_data['ammount_of_layers'][0],
+                'cake_shape':
+                    user_data['shape'][0],
+                'cake_toping':
+                    user_data['topping'][0],
+                'cake_berries':
+                    user_data['berries'][0],
+                'cakes_decor':
+                    user_data['decor'][0],
+                'cake_inscription':
+                    user_data['inscription'][0],
+                'cake_comment':
+                    user_data['comment'][0],
+                'address':
+                    user_data['address'][0],
+                'delivery_date':
+                    user_data['delivery_date'][0],
+                'delivery_time':
+                    user_data['delivery_time'][0],
+                'order_cost': [
+                    sum([value[1] for value in user_data.values()]), ''
+                ][0]
+            }
+            if order['cake_inscription'] != '-':
+                order['order_cost'] += 500
+
+            user['orders'].append(order)
+            break
+
+    database_write_users_order(users)
+    user_data.clear()
+    message_keyboard = [['Детали заказа', 'Личный кабинет']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+
+    update.message.reply_text('Заказ сформирован', reply_markup=markup)
+
+    return PRINT_ORDER
+
+
+def print_order(update: Update, context: CallbackContext) -> int:
+    user_id = update.effective_user.id
+    users = database_read_users_order()
+    for user in users:
+        if user_id in user.values():
+            order = user['orders'][-1]
+    order_details = ''
+
+    order_descriptions = [
+        'Номер заказа:',
+        'Статус:',
+        'Количество ярусов:',
+        'Форма:',
+        'Топпинг:',
+        'Ягоды:',
+        'Декор:',
+        'Надпись:',
+        'Комментарий:',
+        'Адрес:',
+        'Дата доставки:',
+        'Время доставки:',
+        'Стоимость:',
+    ]
+    for i, v in zip(order_descriptions, order.values()):
+
+        order_details += f"{i} {v if v else '-'}\n"
+    update.message.reply_text(order_details)
     return start(update, context)
 
 
@@ -197,9 +505,61 @@ if __name__ == '__main__':
                 MessageHandler(Filters.contact, end_auth),
                 MessageHandler(Filters.text, end_auth),
             ],
-            NUMBER_ORDER: [MessageHandler(Filters.regex(r'Мои заказы'), push_user_orders),
-                           MessageHandler(Filters.regex(r'Личный кабинет'), start)],
+            PERSONAL_ACCOUNT: [
+                MessageHandler(Filters.regex('^Собрать торт$'),
+                               get_amount_of_layers),
+                MessageHandler(Filters.regex('^(Мои заказы)$'),
+                               push_user_orders),
+                MessageHandler(Filters.regex('^(Личный кабинет)$'), start)
+            ],
             CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order)],
+            CAKE_SHAPE: [
+                MessageHandler(
+                    Filters.regex('^1$') | Filters.regex('^2$') |
+                    Filters.regex('^3$'), get_cake_shape)
+            ],
+            TOPPING: [
+                MessageHandler(
+                    Filters.regex('^Квадрат$') | Filters.regex('^Круг$') |
+                    Filters.regex('^Прямоугольник$'), get_topping)
+            ],
+            BERRIES: [
+                MessageHandler(
+                    Filters.regex('^Пропустить$') |
+                    Filters.regex('^Без топпинга$') |
+                    Filters.regex('^Белый соус$') |
+                    Filters.regex('^Карамельный сироп$') |
+                    Filters.regex('^Кленовый сироп$') |
+                    Filters.regex('^Клубничный сироп$') |
+                    Filters.regex('^Черничный сироп$') |
+                    Filters.regex('^Молочный шоколад$'), get_berries)
+            ],
+            DECOR: [
+                MessageHandler(
+                    Filters.regex('^Пропустить$') | Filters.regex('^Ежевика$') |
+                    Filters.regex('^Малина$') | Filters.regex('^Голубика$') |
+                    Filters.regex('^Клубника$'), get_decor)
+            ],
+            INSCRIPTION: [
+                MessageHandler(
+                    Filters.regex('^Пропустить$') |
+                    Filters.regex('^Фисташки$') | Filters.regex('^Безе$') |
+                    Filters.regex('^Фундук$') | Filters.regex('^Пекан$') |
+                    Filters.regex('^Маршмеллоу$') | Filters.regex('^Марципан'),
+                    get_inscription)
+            ],
+            ORDER_COMMENT: [MessageHandler(Filters.text, get_order_comment)],
+            ADDRESS: [MessageHandler(Filters.text, get_address)],
+            DELIVERY_DATE: [
+                MessageHandler(Filters.location, get_delivery_date),
+                MessageHandler(Filters.text, get_delivery_date)
+            ],
+            DELIVERY_TIME: [MessageHandler(Filters.text, get_delivery_time)],
+            ORDER_SAVING: [MessageHandler(Filters.text, save_order)],
+            PRINT_ORDER: [
+                MessageHandler(Filters.regex('^Детали заказа$'), print_order),
+                MessageHandler(Filters.regex('^Личный кабинет$'), start),
+            ]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
     )
