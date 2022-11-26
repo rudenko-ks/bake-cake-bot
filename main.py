@@ -328,11 +328,34 @@ def get_delivery_date(update: Update, context: CallbackContext) -> int:
 
 
 def get_delivery_time(update: Update, context: CallbackContext) -> int:
-    save_user_choice(update, context)
+    date = update.message.text
+    if not is_valid_date(date):
+        update.message.reply_text('Некорректная дата')
+        return get_delivery_date(update, context)
+    category = context.user_data['choice']
+    context.user_data[category] = [date, 0]
     context.user_data['choice'] = 'delivery_time'
     update.message.reply_text('Введите время доставки в формате: ЧЧ.ММ')
 
     return ORDER_SAVING
+
+
+def get_delivery_time_2(update: Update, context: CallbackContext) -> int:
+    context.user_data['choice'] = 'delivery_time'
+    update.message.reply_text('Введите время доставки в формате: ЧЧ.ММ')
+    return ORDER_SAVING
+
+
+def save_time(update, context) -> None:
+    time = update.message.text
+    hours, minutes = map(
+        lambda x: f'{int(x):02}',
+        time.split(re.search(r'[-.:]{1}', time).group())
+    )
+    category = context.user_data['choice']
+    context.user_data[category] = [f'{hours}.{minutes}', 0]
+    del context.user_data['choice']
+    return
 
 
 def save_user_choice(update: Update, context: CallbackContext) -> None:
@@ -349,13 +372,17 @@ def save_user_choice(update: Update, context: CallbackContext) -> None:
 
 
 def save_order(update: Update, context: CallbackContext) -> int:
-    save_user_choice(update, context)
+    time = update.message.text
+    if not is_time_valid(time):
+        update.message.reply_text('Некорректное время')
+        return get_delivery_time_2(update, context)
+    save_time(update, context)
     user_data = context.user_data
-
     user_id = update.effective_user.id
     users = database_read_users_order()
     for user in users:
         if user_id in user.values():
+            print(user_data)
             order = {
                 'id':
                     len(user['orders']) + 1,
