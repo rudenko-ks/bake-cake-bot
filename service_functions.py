@@ -78,7 +78,7 @@ def is_valid_phone_number(phone_number: str) -> bool:
     """Проверка на валидность номера телефона"""
     if len(phone_number) > 12:
         return False
-    elif len(phone_number) < 12:
+    elif len(phone_number) < 11:
         return False
 
     cleared_phone_number = clear_phone_number(phone_number)
