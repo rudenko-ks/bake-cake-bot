@@ -1,6 +1,8 @@
 import os
 import json
 import datetime
+import re
+import time
 from string import digits, ascii_letters
 
 BAKE_CAKE_DB: str = 'json_files/user_orders.json'
@@ -99,3 +101,12 @@ def is_valid_date(date: str) -> bool:
     except:
         return False
 
+
+def is_time_valid(time: str) -> bool:
+    try:
+        hours, minutes = map(int, time.split(re.search(r'[-.:]{1}', time).group()))
+    except:
+        return False
+    if 0 <= hours < 24 and 0 <= minutes < 60:
+        return True
+    return False
