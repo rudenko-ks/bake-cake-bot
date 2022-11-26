@@ -322,7 +322,7 @@ def get_delivery_date(update: Update, context: CallbackContext) -> int:
     category = context.user_data['choice']
     context.user_data[category] = [address, 0]
     context.user_data['choice'] = 'delivery_date'
-    update.message.reply_text('Введите дату доставки в формате: ДД.ММ.ГГ')
+    update.message.reply_text('Введите дату доставки в формате: ДД.ММ.ГГГГ')
 
     return DELIVERY_TIME
 
