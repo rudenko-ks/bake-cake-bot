@@ -328,7 +328,12 @@ def get_delivery_date(update: Update, context: CallbackContext) -> int:
 
 
 def get_delivery_time(update: Update, context: CallbackContext) -> int:
-    save_user_choice(update, context)
+    date = update.message.text
+    if not is_valid_date(date):
+        update.message.reply_text('Некорректная дата')
+        return get_delivery_date(update, context)
+    category = context.user_data['choice']
+    context.user_data[category] = [date, 0]
     context.user_data['choice'] = 'delivery_time'
     update.message.reply_text('Введите время доставки в формате: ЧЧ.ММ')
 
