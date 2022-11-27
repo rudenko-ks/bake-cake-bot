@@ -542,7 +542,7 @@ def pay_for_order(update: Update, context: CallbackContext):
 
     response = requests.post(url, params=params)
     response.raise_for_status()
-    print(response.json())
+    return start(update, context)
 
 
 def delete_order(update: Update, context: CallbackContext):
