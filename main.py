@@ -1,4 +1,6 @@
 import os
+import requests
+
 
 from dotenv import load_dotenv
 from telegram import (Update, ReplyKeyboardMarkup, KeyboardButton)
@@ -11,42 +13,57 @@ from service_functions import *
 # USER_FULLNAME, PHONE_NUMBER, END_AUTH, NUMBER_ORDER, CHOICE_ORDER = range(5)
 
 USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, CAKE_SHAPE, TOPPING, BERRIES, \
-DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER = range(16)
+DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU = range(17)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
 
 SELF_STORAGE_USER_ORDERS: str = 'json_files/user_orders.json'
 
 PRICES = {
-    '1': 400,
-    '2': 750,
-    '3': 1100,
-    'Квадрат': 600,
-    'Круг': 400,
-    'Прямоугольник': 1000,
-    'Молочный шоколад': 200,
-    'Карамельный сироп': 180,
-    'Белый соус': 200,
-    'Кленовый сироп': 200,
-    'Клубничный сироп': 300,
-    'Черничный сироп': 350,
+    '1': 40,
+    '2': 75,
+    '3': 110,
+    'Квадрат': 60,
+    'Круг': 40,
+    'Прямоугольник': 100,
+    'Молочный шоколад': 20,
+    'Карамельный сироп': 18,
+    'Белый соус': 20,
+    'Кленовый сироп': 20,
+    'Клубничный сироп': 30,
+    'Черничный сироп': 35,
     'Без топпинга': 0,
-    'Ежевика': 400,
-    'Малина': 300,
-    'Голубика': 450,
-    'Клубника': 500,
-    'Фисташки': 300,
-    'Безе': 400,
-    'Фундук': 350,
-    'Пекан': 300,
-    'Маршмеллоу': 200,
-    'Марципан': 280,
+    'Ежевика': 40,
+    'Малина': 30,
+    'Голубика': 45,
+    'Клубника': 50,
+    'Фисташки': 30,
+    'Безе': 40,
+    'Фундук': 35,
+    'Пекан': 30,
+    'Маршмеллоу': 20,
+    'Марципан': 28,
 }
+
+ORDER_DESCRIPTIONS = [
+        'Номер заказа:',
+        'Статус:',
+        'Количество ярусов:',
+        'Форма:',
+        'Топпинг:',
+        'Ягоды:',
+        'Декор:',
+        'Надпись:',
+        'Комментарий:',
+        'Адрес:',
+        'Дата доставки:',
+        'Время доставки:',
+        'Стоимость:',
+    ]
 
 
 def start(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
-
     if is_new_user(user.id):
         message_keyboard = [['✅ Согласен', '❌ Не согласен']]
         markup = ReplyKeyboardMarkup(message_keyboard,
@@ -136,29 +153,10 @@ def push_user_order(update: Update, context: CallbackContext):
         usr_orders = json.load(json_file)
     effective_user_id = update.effective_user.id
     all_user_orders = get_order_id(usr_orders, effective_user_id)[2]
-    text = update.message.text
+    order = update.message.text
     for user_order in all_user_orders:
-        if str(user_order['id']) == text:
-            delivery_date = 'Дата доставки: ' + str(
-                user_order['delivery_date']) + '\n'
-            delivery_time = 'Время доставки: ' + str(
-                user_order['delivery_time']) + '\n'
-            status = 'Cтатус доставки: ' + str(user_order['status']) + '\n'
-            cake_layers = 'Уровни: ' + str(user_order['cake_layers']) + '\n'
-            cake_toping = 'Топинги: ' + str(user_order['cake_toping']) + '\n'
-            cake_fruits = 'Фрукты: ' + str(user_order['cake_berries']) + '\n'
-            cakes_decor = 'Декро: ' + str(user_order['cakes_decor']) + '\n'
-            cakes_text = 'Надпись: ' + str(
-                user_order['cake_inscription']) + '\n'
-            address = 'Адрес доставки: ' + str(user_order['address']) + '\n'
-            order_cost = 'Стоимость: ' + str(user_order['order_cost']) + '\n'
-            update.message.reply_text(status + delivery_date + delivery_time +
-                                      cake_layers + cake_toping + cake_fruits +
-                                      cakes_decor + cakes_text + address +
-                                      order_cost)
-
-
-    return start(update, context)
+        if str(user_order['id']) == order:
+            print_order(update, context)
 
 
 def get_amount_of_layers(update: Update, context: CallbackContext) -> int:
@@ -341,6 +339,10 @@ def get_delivery_time(update: Update, context: CallbackContext) -> int:
 
 
 def get_delivery_time_2(update: Update, context: CallbackContext) -> int:
+    """
+    Функция вызывается вместо get_delivery_time если
+    пользователь ошибся при вводе даты в первый раз
+    """
     context.user_data['choice'] = 'delivery_time'
     update.message.reply_text('Введите время доставки в формате: ЧЧ.ММ')
     return ORDER_SAVING
@@ -382,10 +384,15 @@ def save_order(update: Update, context: CallbackContext) -> int:
     users = database_read_users_order()
     for user in users:
         if user_id in user.values():
-            print(user_data)
+            user_ids = [order['id'] for order in user['orders']]
+            id = 1
+            while True:
+                if id not in user_ids:
+                    break
+                id += 1
             order = {
                 'id':
-                    len(user['orders']) + 1,
+                    id,
                 'status':
                     'Принят',
                 'cake_layers':
@@ -431,33 +438,33 @@ def save_order(update: Update, context: CallbackContext) -> int:
 
 
 def print_order(update: Update, context: CallbackContext) -> int:
+    user_input = update.message.text
     user_id = update.effective_user.id
     users = database_read_users_order()
     for user in users:
         if user_id in user.values():
-            order = user['orders'][-1]
+            if update.message.text == 'Детали заказа':
+                order = user['orders'][-1]
+            elif not user_input.isdigit() or int(user_input) not in [order['id'] for order in user['orders']]:
+                return start(update, context)
+            else:
+                order = ''
+                for i in user['orders']:
+                    if i['id'] == int(user_input):
+                        order = i
+                        break
     order_details = ''
 
-    order_descriptions = [
-        'Номер заказа:',
-        'Статус:',
-        'Количество ярусов:',
-        'Форма:',
-        'Топпинг:',
-        'Ягоды:',
-        'Декор:',
-        'Надпись:',
-        'Комментарий:',
-        'Адрес:',
-        'Дата доставки:',
-        'Время доставки:',
-        'Стоимость:',
-    ]
-    for i, v in zip(order_descriptions, order.values()):
-
+    for i, v in zip(ORDER_DESCRIPTIONS, order.values()):
         order_details += f"{i} {v if v else '-'}\n"
-    update.message.reply_text(order_details)
-    return start(update, context)
+    message_keyboard = [['Удалить', 'Оплатить'],
+                        ['Личный кабинет']]
+    markup = ReplyKeyboardMarkup(message_keyboard,
+                                 one_time_keyboard=True,
+                                 resize_keyboard=True)
+    update.message.reply_text(order_details, reply_markup=markup)
+    context.user_data['order'] = order
+    return ORDER_MENU
 
 
 def end_auth(update: Update, context: CallbackContext):
@@ -511,6 +518,43 @@ def cancel_auth(update: Update, context: CallbackContext) -> None:
     return ConversationHandler.END
 
 
+def pay_for_order(update: Update, context: CallbackContext):
+    order = context.user_data['order']
+    if order['status'] != 'Принят':
+        update.message.reply_text('Заказ уже оплачен')
+        return start(update, context)
+    user = update.effective_user
+    payment = order['order_cost']
+    prices = json.dumps([{'label': 'Руб', 'amount': payment * 100}])
+    print(payment)
+    url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}/sendInvoice"
+    params = {
+        'chat_id': user.id,
+        'title': 'Заказ номер',
+        'description': '.',
+        'payload': '.',
+        'provider_token': os.getenv('PAYMENT_TOKEN_UKASSA'),
+        'currency': 'RUB',
+        'start_parameter': 'test',
+        'prices': prices
+    }
+
+    response = requests.post(url, params=params)
+    response.raise_for_status()
+    return start(update, context)
+
+
+def delete_order(update: Update, context: CallbackContext):
+    order = context.user_data['order']
+    users = database_read_users_order()
+    user_id = update.effective_user.id
+    for user in users:
+        if user_id in user.values():
+            user['orders'].remove(order)
+    database_write_users_order(users)
+    return start(update, context)
+
+
 if __name__ == '__main__':
 
     load_dotenv()
@@ -539,7 +583,7 @@ if __name__ == '__main__':
                                push_user_orders),
                 MessageHandler(Filters.regex('^(Личный кабинет)$'), start)
             ],
-            CHOICE_ORDER: [MessageHandler(Filters.text, push_user_order)],
+            CHOICE_ORDER: [MessageHandler(Filters.text, print_order)],
             CAKE_SHAPE: [
                 MessageHandler(
                     Filters.regex('^1$') | Filters.regex('^2$') |
@@ -586,6 +630,11 @@ if __name__ == '__main__':
             PRINT_ORDER: [
                 MessageHandler(Filters.regex('^Детали заказа$'), print_order),
                 MessageHandler(Filters.regex('^Личный кабинет$'), start),
+            ],
+            ORDER_MENU: [
+                MessageHandler(Filters.regex('^Оплатить$'), pay_for_order),
+                MessageHandler(Filters.regex('^Личный кабинет$'), start),
+                MessageHandler(Filters.regex('^Удалить$'), delete_order),
             ]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
@@ -597,3 +646,5 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("start", start))
     updater.start_polling()
     updater.idle()
+
+
