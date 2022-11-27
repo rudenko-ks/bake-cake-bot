@@ -13,7 +13,7 @@ from service_functions import *
 
 USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, \
 CAKE_SHAPE, TOPPING, BERRIES, DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, \
-DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU, PRE_CHECK_OUT, SUCCESSFUL = range(19)
+DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU, SUCCESSFUL = range(18)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
 
@@ -534,21 +534,29 @@ def start_without_shipping_callback(update: Update, context: CallbackContext) ->
     chat_id = update.message.chat_id
     title = 'Заказ'
     description = 'Описание платежа'
-    payload = '-'
-    provider_token = os.getenv('PAYMENT_TOKEN_SBER')
+    payload = 'Custom-Payload'
+    provider_token = os.getenv('PAYMENT_TOKEN_UKASSA')
     currency = 'RUB'
     price = context.user_data['order']['order_cost']
     prices = [LabeledPrice('Test', price * 100)]
+
     context.bot.send_invoice(
-        chat_id, title, description, payload, provider_token, currency, prices
+        chat_id,
+        title,
+        description,
+        payload,
+        provider_token,
+        currency,
+        prices,
     )
 
-    return PRE_CHECK_OUT
+    return dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
 
 
 def precheckout_callback(update: Update, context: CallbackContext) -> None:
     query = update.pre_checkout_query
     if query.invoice_payload != 'Custom-Payload':
+        print(query.invoice_payload)
         query.answer(ok=False, error_message="Something went wrong...")
     else:
         query.answer(ok=True)
@@ -651,9 +659,7 @@ if __name__ == '__main__':
                 MessageHandler(Filters.regex('^Личный кабинет$'), start),
                 MessageHandler(Filters.regex('^Удалить$'), delete_order),
             ],
-            PRE_CHECK_OUT: [
-                PreCheckoutQueryHandler(precheckout_callback)
-            ],
+
             SUCCESSFUL: [
                 MessageHandler(Filters.successful_payment, successful_payment_callback)
             ]
