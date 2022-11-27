@@ -1,19 +1,19 @@
 import os
 import requests
 
-
 from dotenv import load_dotenv
-from telegram import (Update, ReplyKeyboardMarkup, KeyboardButton)
+from telegram import (Update, ReplyKeyboardMarkup, KeyboardButton, LabeledPrice)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                          CallbackContext, ConversationHandler)
+                          CallbackContext, ConversationHandler, PreCheckoutQueryHandler)
 
 from messages import *
 from service_functions import *
 
 # USER_FULLNAME, PHONE_NUMBER, END_AUTH, NUMBER_ORDER, CHOICE_ORDER = range(5)
 
-USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, CAKE_SHAPE, TOPPING, BERRIES, \
-DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU = range(17)
+USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, \
+CAKE_SHAPE, TOPPING, BERRIES, DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, \
+DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU, PRE_CHECK_OUT, SUCCESSFUL = range(19)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
 
@@ -46,20 +46,27 @@ PRICES = {
 }
 
 ORDER_DESCRIPTIONS = [
-        'Номер заказа:',
-        'Статус:',
-        'Количество ярусов:',
-        'Форма:',
-        'Топпинг:',
-        'Ягоды:',
-        'Декор:',
-        'Надпись:',
-        'Комментарий:',
-        'Адрес:',
-        'Дата доставки:',
-        'Время доставки:',
-        'Стоимость:',
-    ]
+    'Номер заказа:',
+    'Статус:',
+    'Количество ярусов:',
+    'Форма:',
+    'Топпинг:',
+    'Ягоды:',
+    'Декор:',
+    'Надпись:',
+    'Комментарий:',
+    'Адрес:',
+    'Дата доставки:',
+    'Время доставки:',
+    'Стоимость:',
+]
+
+
+# logging.basicConfig(
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+# )
+#
+# logger = logging.getLogger(__name__)
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -518,31 +525,39 @@ def cancel_auth(update: Update, context: CallbackContext) -> None:
         reply_markup=markup)
     return ConversationHandler.END
 
+def get_updates(offset=0):
+    result = requests.get(f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}/getUpdates?offset={offset}").json()
+    return result['result']
 
-def pay_for_order(update: Update, context: CallbackContext):
-    order = context.user_data['order']
-    if order['status'] != 'Принят':
-        update.message.reply_text('Заказ уже оплачен')
-        return start(update, context)
-    user = update.effective_user
-    payment = order['order_cost']
-    prices = json.dumps([{'label': 'Руб', 'amount': payment * 100}])
-    print(payment)
-    url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}/sendInvoice"
-    params = {
-        'chat_id': user.id,
-        'title': 'Заказ номер',
-        'description': '.',
-        'payload': '.',
-        'provider_token': os.getenv('PAYMENT_TOKEN_UKASSA'),
-        'currency': 'RUB',
-        'start_parameter': 'test',
-        'prices': prices
-    }
 
-    response = requests.post(url, params=params)
-    response.raise_for_status()
-    return start(update, context)
+def start_without_shipping_callback(update: Update, context: CallbackContext) -> None:
+    chat_id = update.message.chat_id
+    title = 'Заказ'
+    description = 'Описание платежа'
+    payload = '-'
+    provider_token = os.getenv('PAYMENT_TOKEN_SBER')
+    currency = 'RUB'
+    price = context.user_data['order']['order_cost']
+    prices = [LabeledPrice('Test', price * 100)]
+    context.bot.send_invoice(
+        chat_id, title, description, payload, provider_token, currency, prices
+    )
+
+    return PRE_CHECK_OUT
+
+
+def precheckout_callback(update: Update, context: CallbackContext) -> None:
+    query = update.pre_checkout_query
+    if query.invoice_payload != 'Custom-Payload':
+        query.answer(ok=False, error_message="Something went wrong...")
+    else:
+        query.answer(ok=True)
+
+    return SUCCESSFUL
+
+
+def successful_payment_callback(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Спасибо. Ваш платеж поступил")
 
 
 def delete_order(update: Update, context: CallbackContext):
@@ -557,7 +572,6 @@ def delete_order(update: Update, context: CallbackContext):
 
 
 if __name__ == '__main__':
-
     load_dotenv()
     telegram_bot_token = os.environ['TELEGRAM_TOKEN']
 
@@ -633,9 +647,15 @@ if __name__ == '__main__':
                 MessageHandler(Filters.regex('^Личный кабинет$'), start),
             ],
             ORDER_MENU: [
-                MessageHandler(Filters.regex('^Оплатить$'), pay_for_order),
+                MessageHandler(Filters.regex('^Оплатить$'), start_without_shipping_callback),
                 MessageHandler(Filters.regex('^Личный кабинет$'), start),
                 MessageHandler(Filters.regex('^Удалить$'), delete_order),
+            ],
+            PRE_CHECK_OUT: [
+                PreCheckoutQueryHandler(precheckout_callback)
+            ],
+            SUCCESSFUL: [
+                MessageHandler(Filters.successful_payment, successful_payment_callback)
             ]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
