@@ -110,3 +110,4 @@ def is_time_valid(time: str) -> bool:
     if 0 <= hours < 24 and 0 <= minutes < 60:
         return True
     return False
+

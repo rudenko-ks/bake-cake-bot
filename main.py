@@ -64,7 +64,6 @@ ORDER_DESCRIPTIONS = [
 
 def start(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
-    print(user)
     if is_new_user(user.id):
         message_keyboard = [['✅ Согласен', '❌ Не согласен']]
         markup = ReplyKeyboardMarkup(message_keyboard,
@@ -386,9 +385,15 @@ def save_order(update: Update, context: CallbackContext) -> int:
     users = database_read_users_order()
     for user in users:
         if user_id in user.values():
+            user_ids = [order['id'] for order in user['orders']]
+            id = 1
+            while True:
+                if id not in user_ids:
+                    break
+                id += 1
             order = {
                 'id':
-                    len(user['orders']) + 1,
+                    id,
                 'status':
                     'Принят',
                 'cake_layers':
@@ -441,10 +446,14 @@ def print_order(update: Update, context: CallbackContext) -> int:
         if user_id in user.values():
             if update.message.text == 'Детали заказа':
                 order = user['orders'][-1]
-            elif not user_input.isdigit() or int(user_input) not in range(1, len(user['orders']) + 1):
+            elif not user_input.isdigit() or int(user_input) not in [order['id'] for order in user['orders']]:
                 return start(update, context)
             else:
-                order = user['orders'][int(user_input) - 1]
+                order = ''
+                for i in user['orders']:
+                    if i['id'] == int(user_input):
+                        order = i
+                        break
     order_details = ''
 
     for i, v in zip(ORDER_DESCRIPTIONS, order.values()):
@@ -522,7 +531,6 @@ def delete_order(update: Update, context: CallbackContext):
             user['orders'].remove(order)
     database_write_users_order(users)
     return start(update, context)
-
 
 
 if __name__ == '__main__':
