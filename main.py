@@ -129,7 +129,6 @@ def get_phone_number(update: Update, context: CallbackContext):
     return END_AUTH
 
 
-# Если пользователь зарегистрирован - return PERSONAL_ACCOUNT из функции start
 def push_user_orders(update: Update, context: CallbackContext):
     with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
         usr_orders = json.load(json_file)
