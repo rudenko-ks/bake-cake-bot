@@ -520,7 +520,30 @@ def cancel_auth(update: Update, context: CallbackContext) -> None:
 
 
 def pay_for_order(update: Update, context: CallbackContext):
-    pass
+    order = context.user_data['order']
+    if order['status'] != 'Принят':
+        update.message.reply_text('Заказ уже оплачен')
+        return start(update, context)
+    user = update.effective_user
+    payment = order['order_cost']
+    prices = json.dumps([{'label': 'Руб', 'amount': payment * 100}])
+    print(payment)
+    url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}/sendInvoice"
+    params = {
+        'chat_id': user.id,
+        'title': 'Заказ номер',
+        'description': '.',
+        'payload': '.',
+        'provider_token': os.getenv('PAYMENT_TOKEN_UKASSA'),
+        'currency': 'RUB',
+        'start_parameter': 'test',
+        'prices': prices
+    }
+
+    response = requests.post(url, params=params)
+    response.raise_for_status()
+    print(response.json())
+
 
 def delete_order(update: Update, context: CallbackContext):
     order = context.user_data['order']
