@@ -112,7 +112,6 @@ def get_phone_number(update: Update, context: CallbackContext):
     return END_AUTH
 
 
-# Если пользователь зарегистрирован - return PERSONAL_ACCOUNT из функции start
 def push_user_orders(update: Update, context: CallbackContext):
     with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
         usr_orders = json.load(json_file)
@@ -138,9 +137,8 @@ def push_user_order(update: Update, context: CallbackContext):
     effective_user_id = update.effective_user.id
     all_user_orders = get_order_id(usr_orders, effective_user_id)[2]
     text = update.message.text
-    context.user_data['переходить'] = str(text)
     for user_order in all_user_orders:
-        if str(user_order['id']) == context.user_data['переходить']:
+        if str(user_order['id']) == text:
             delivery_date = 'Дата доставки: ' + str(
                 user_order['delivery_date']) + '\n'
             delivery_time = 'Время доставки: ' + str(
@@ -158,6 +156,8 @@ def push_user_order(update: Update, context: CallbackContext):
                                       cake_layers + cake_toping + cake_fruits +
                                       cakes_decor + cakes_text + address +
                                       order_cost)
+
+
     return start(update, context)
 
 
