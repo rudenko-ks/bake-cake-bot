@@ -25,6 +25,6 @@ TELEGRAM_TOKEN={TOKEN} - Your bot token in TG
 The project was worked on:
 * [Kirill Rudenko](https://github.com/rudenko-ks)
 * [Konstantin Anisimov](https://github.com/AnisimovK)
-* [Elnar](https://github.com/elnarmen)
+* [Elnar Mengelbaev](https://github.com/elnarmen)
 
 
